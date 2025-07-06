@@ -3,7 +3,7 @@
 **uvtarget is a helpful utility to manage Python in CMake, powered by uv**
 
 ### Features
-* Supports autognerating `pyproject.toml` for a workspace
+* Supports autogenerating `pyproject.toml` for a workspace
 * Creates a dev workspace with all declared projects included as editable
 * Automatically syncs changes to projects to the workspace, every build (possible because `uv` is *fast*)
 * Supports installation to a target virtual env
