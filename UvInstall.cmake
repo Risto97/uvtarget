@@ -1,7 +1,7 @@
 # Copyright (c) 2025 Kyle Franz / Basis Robotics
 # This work is licensed under the terms of the MIT license.  
 
-# uvtarget is a helpful utility to manage Python in CMake, powered by uv
+# uvtarget is a helpful utility to manage Python in CMake, powered by uv.
 # For more details, see the README
 
 # UvInstall.cmake - do not include() this file directly,

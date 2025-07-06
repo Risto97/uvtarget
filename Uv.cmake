@@ -1,7 +1,7 @@
 # Copyright (c) 2025 Kyle Franz / Basis Robotics
 # This work is licensed under the terms of the MIT license.  
 
-# uvtarget is a helpful utility to manage Python in CMake, powered by uv
+# uvtarget is a helpful utility to manage Python in CMake, powered by uv.
 # For more details, see the README
 
 # Uv.cmake - main file to include, adds several helpers for managing python
@@ -17,6 +17,16 @@ find_program(UV uv REQUIRED)
 # something else that might also use uvtarget. Generally, you can only have one
 # venv/python version/workspace, and the implementation reflects that.
 function(uv_initialize)
+    get_property(UVTARGET_INITIALIZED
+             GLOBAL PROPERTY UVTARGET_INITIALIZED
+             DEFINED)
+    if(UVTARGET_INITIALIZED)
+        # Ignore multiple calls to uv_initialize
+        return()
+    endif()
+
+    define_property(GLOBAL PROPERTY UVTARGET_INITIALIZED)
+        
     set(POSSIBLE_SINGLE_ARGS
         # Python version to use for the environment
         "PYTHON_VERSION"
@@ -45,13 +55,6 @@ function(uv_initialize)
     if(UV_UNPARSED_ARGUMENTS)
         message(FATAL_ERROR "Unknown argument(s) ${UV_UNPARSED_ARGUMENTS}")
     endif()
-
-    # TODO: this probably doesn't work
-    if(DEFINED UV_INITIALIZED)
-        # TODO: if already initialized and using an unmanaged pyproject, consider calling uv_add_pyproject
-        return()
-    endif()
-    set(UV_INITIALIZED TRUE)
 
     # Set default for project version
     if(NOT DEFINED UV_PROJECT_VERSION)
