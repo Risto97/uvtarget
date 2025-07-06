@@ -10,13 +10,13 @@
 * Supports `FindPython` either as a preceeding step to point `uvtarget` at an existing Python version, or as a successive step to allow linking your code against a uv installed Python.
 
 ### Why do I want this?
-* `uv lock` in a repo with multiple packages requires a single top level package to bring together all other projects. 
+* `uv lock` in a repo with multiple packages requires a single top level package to bring together all other projects.
     * At least starting off, it can be helpful for some of the boilerplate to be taken away (`uvtarget` doesn't require project generation but does encourage it)
     * Especially for container workflows, it's important not to have multiple versions of the same library floating around, and to be able to pin an entire repo at once
 * Simplify dev workflows with CMake
     * I need `jinja2`, how am I going to install it? `apt`? `pip`? What if the version I need isn't compatible with my environment? How do I ensure that users of my CMake extension or library have the right versions installed?
     * What if I want to build my code against a different python version? What if that version isn't in the system package manager?
-    * I want to make sure that 
+    * I want to make sure that
 * Properly handle `sudo make install`
     * By default this doesn't work well with `uv` - both in terms of the root user finding the binary as well as the venv being set up pointed to a python binary that's accessible to the regular user
     * The steps required to take a project+lock file and install it to another location aren't terribly complicated, but they also aren't straightforward to guess. It's nice to not have to dig through blogs/forum posts to find them.
@@ -72,7 +72,7 @@ uv_add_dev_dependency("jinja2>=2.0.0")
 add_custom_command(
     COMMAND
         # Will use the jinja version declared above
-        ${UV} run ${BASIS_SOURCE_ROOT}/do_template_magic.py 
+        ${UV} run ${BASIS_SOURCE_ROOT}/do_template_magic.py
     ...
     )
 ```
@@ -87,11 +87,34 @@ add_executable(links_against_py main.cpp)
 target_link_libraries(links_against_py PUBLIC Python::Python)
 ```
 
+### API
+
+* `uv_initialize(...)` - call this near the root/top of your source tree. Later calls will be discarded.    
+    * `PYTHON_VERSION` - Python version to use for the environment
+    * `MANAGED_PYPROJECT_FILE` - File pointing to workspace pyproject, that we can rewrite (defaults to CMAKE_SOURCE_DIRECTORY/pyproject.toml) (mutually exclusive with `UNMANAGED_PYPROJECT_FILE`)
+    * `UNMANAGED_PYPROJECT_FILE` - File pointing to workspace pyproject, that we will not rewrite (defaults to unset) (mutually exclusive with `MANAGED_PYPROJECT_FILE`)
+    * `WORKSPACE_PACKAGE_NAME` - Name of the generated workspace package
+    * `WORKSPACE_VENV` - venv directory to install editable copy of package into
+    * `INSTALLATION_VENV` - venv directory to install into (if empty, won't have an install step)
+    * `INSTALLATION_VENV_CACHE` - Cache directory to use for venv
+
+* `uv_add_pyproject(PROJECT)` - adds the file `PROJECT` to the managed environment project - must be a path to a `.toml` relative to the current source directory.
+* `uv_add_dev_dependency(DEP)` - adds the dependency `DEP` to the dev dependency group - it will be installed as part of your development environment but not with `make install`. `jinja2>=3.1.6` and `transformers[torch] >=4.39.3,<5"` are acceptable dependencies, but currently semicolons don't work (`jax; sys_platform == 'linux'`) due to CMake limitations.
+
 ### Installation
 
-Either use FetchContent or insource this into your own repo.
-
+Use FetchContent to add this to your project:
 ```cmake
-TODO once this is moved out
+    FetchContent_Declare(
+        uvtarget
+        GIT_REPOSITORY https://github.com/basis-robotics/uvtarget
+        GIT_TAG v0.1.0
+    )
+    FetchContent_MakeAvailable(uvtarget)
 
+    include(${uvtarget_SOURCE_DIR}/Uv.cmake)\
+
+    uv_initialize(...)
 ```
+
+...or just insource it, it's two files.

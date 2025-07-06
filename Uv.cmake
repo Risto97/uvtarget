@@ -1,5 +1,5 @@
 # Copyright (c) 2025 Kyle Franz / Basis Robotics
-# This work is licensed under the terms of the MIT license.  
+# This work is licensed under the terms of the MIT license.
 
 # uvtarget is a helpful utility to manage Python in CMake, powered by uv.
 # For more details, see the README
@@ -26,7 +26,7 @@ function(uv_initialize)
     endif()
 
     define_property(GLOBAL PROPERTY UVTARGET_INITIALIZED)
-        
+
     set(POSSIBLE_SINGLE_ARGS
         # Python version to use for the environment
         "PYTHON_VERSION"
@@ -37,7 +37,7 @@ function(uv_initialize)
         # Name of the generated workspace package
         "WORKSPACE_PACKAGE_NAME"
         # venv directory to install editable copy of package into
-        "WORKSPACE_VENV"        
+        "WORKSPACE_VENV"
         # venv directory to install into (if empty, won't have an install step)
         "INSTALLATION_VENV"
         # Cache directory to use for venv
@@ -77,7 +77,7 @@ function(uv_initialize)
         message("Using managed pyproject at ${UV_PYPROJECT_FILE}")
         set(UV_USING_MANAGED_PYPROJECT ON)
     endif()
-    
+
     # Convert relative paths to absolute
     file(REAL_PATH ${UV_PYPROJECT_FILE} UV_PYPROJECT_FILE BASE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 
@@ -92,7 +92,7 @@ function(uv_initialize)
     set(ENV{VIRTUAL_ENV} ${UV_WORKSPACE_VENV})
     set(ENV{UV_PROJECT_ENVIRONMENT} ${UV_WORKSPACE_VENV})
 
-    # create the venv - would normally be done by uv sync but 
+    # create the venv - would normally be done by uv sync but
     # we want to pin the python version ahead of time
     execute_process(
         COMMAND
@@ -103,7 +103,7 @@ function(uv_initialize)
 
     # Add target to sync all pyproject depends to our dev venv
     add_custom_target(uv_sync ALL COMMAND
-        ${CMAKE_COMMAND} -E env 
+        ${CMAKE_COMMAND} -E env
             # Ensure we target the right environment
             UV_PROJECT_ENVIRONMENT=${UV_WORKSPACE_VENV_DIRECTORY}
             # Silence warning if the user's terminal is an a venv
@@ -213,7 +213,7 @@ function(_uv_internal_finish
         make_directory("${PYPROJECT_DIR}/src/${UV_WORKSPACE_PACKAGE_NAME}")
 
         # funnily enough, we could probably use jinja to generate this
-        
+
         # Start a new file, overwriting whatever was there
         file(WRITE ${UV_PYPROJECT_FILE} "")
         # Basic project info
@@ -258,7 +258,7 @@ function(_uv_internal_finish
 
     # This step is non-destructive so it gets to happen to all projects
     # TODO: we might want a way of turning it off, if including some library that adds
-    # unwanted dev deps 
+    # unwanted dev deps
     get_property(UV_DEV_DEPENDENCIES GLOBAL PROPERTY UV_DEV_DEPENDENCIES)
     foreach(DEP IN LISTS UV_DEV_DEPENDENCIES)
         message("Adding python dependency ${DEP} ${UV_PYPROJECT_FILE}")
