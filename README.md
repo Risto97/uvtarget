@@ -29,10 +29,10 @@ None of these are impossible without something like `uvtarget`, but it sure does
 
 ### Need something this doesn't provide?
 
-You're welcome to make a feature request or PR. Beyond that - if it's some addition to the generated `pyproject.toml`, I'd recommend swapping to `UNMANAGED`, if the feature is complex. If it's just some custom flag to `uv sync` or change in the install feature, I recommend you fork and change it yourself if things are moving too slowly.
+You're welcome to make a feature request or PR. Beyond that - if it's some addition to the generated `pyproject.toml`, I'd recommend using `UNMANAGED_PYPROJECT_FILE`. If it's just some custom flag to `uv sync` or change in the install feature, I recommend you fork and change it yourself if things are moving too slowly.
 
 ### Learn even more
-See this blog post
+[See this blog post](https://basisrobotics.tech/2025/07/06/uvtarget/)
 
 ### Example Usage
 ```cmake
