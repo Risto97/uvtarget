@@ -86,7 +86,7 @@ function(uv_initialize)
     endif()
 
     # Ensure we always ignore whatever the shell's virtual env is and use the env defined in cmake
-    file(REAL_PATH ${UV_WORKSPACE_VENV} UV_WORKSPACE_VENV BASE_DIRECTORY "${CMAKE_BINARY_DIRECTORY}")
+    file(REAL_PATH ${UV_WORKSPACE_VENV} UV_WORKSPACE_VENV BASE_DIRECTORY "${CMAKE_BINARY_DIR}")
 
     # Ensure that other invocations of uv (especially those outside this file) do the right thing
     set(ENV{VIRTUAL_ENV} ${UV_WORKSPACE_VENV})
