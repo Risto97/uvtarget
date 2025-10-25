@@ -94,12 +94,14 @@ function(uv_initialize)
 
     # create the venv - would normally be done by uv sync but
     # we want to pin the python version ahead of time
-    execute_process(
-        COMMAND
-            ${UV} venv --python ${UV_PYTHON_VERSION} --allow-existing
-        WORKING_DIRECTORY
-            ${CMAKE_BINARY_DIR}
-        COMMAND_ERROR_IS_FATAL ANY)
+    if(NOT EXISTS ${UV_WORKSPACE_VENV})
+        execute_process(
+            COMMAND
+                ${UV} venv --python ${UV_PYTHON_VERSION} --allow-existing
+            WORKING_DIRECTORY
+                ${CMAKE_BINARY_DIR}
+            COMMAND_ERROR_IS_FATAL ANY)
+    endif()
 
     # Add target to sync all pyproject depends to our dev venv
     add_custom_target(uv_sync ALL COMMAND
