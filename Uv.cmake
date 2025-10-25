@@ -262,7 +262,7 @@ function(_uv_internal_finish
     get_property(UV_DEV_DEPENDENCIES GLOBAL PROPERTY UV_DEV_DEPENDENCIES)
     foreach(DEP IN LISTS UV_DEV_DEPENDENCIES)
         message("Adding python dependency ${DEP} ${UV_PYPROJECT_FILE}")
-        execute_process(COMMAND ${UV} add --project ${UV_PYPROJECT_FILE} --dev ${DEP} --no-sync COMMAND_ERROR_IS_FATAL ANY)
+        execute_process(COMMAND ${UV} add --project ${UV_PYPROJECT_FILE} --dev ${DEP} --no-sync -q COMMAND_ERROR_IS_FATAL ANY)
     endforeach()
 
     # We could depend on all pyproject tomls this way, but it wouldn't catch
