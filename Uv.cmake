@@ -30,7 +30,7 @@ function(uv_initialize)
     set(POSSIBLE_SINGLE_ARGS
         # Python version to use for the environment
         "PYTHON_VERSION"
-        # File pointing to workspace pyproject, that we can write to (defaults to CMAKE_SOURCE_DIRECTORY/pyproject.toml)
+        # File pointing to workspace pyproject, that we can write to (defaults to CMAKE_SOURCE_DIR/pyproject.toml)
         "MANAGED_PYPROJECT_FILE"
         # File pointing to workspace pyproject, that we will not touch (defaults to unset)
         "UNMANAGED_PYPROJECT_FILE"
@@ -71,7 +71,7 @@ function(uv_initialize)
         set(UV_USING_MANAGED_PYPROJECT OFF)
     else()
         if(NOT DEFINED UV_MANAGED_PYPROJECT_FILE)
-            set(UV_MANAGED_PYPROJECT_FILE "${CMAKE_CURRENT_SOURCE_DIRECTORY}/pyproject.toml")
+            set(UV_MANAGED_PYPROJECT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/pyproject.toml")
         endif()
         set(UV_PYPROJECT_FILE ${UV_MANAGED_PYPROJECT_FILE})
         message("Using managed pyproject at ${UV_PYPROJECT_FILE}")
