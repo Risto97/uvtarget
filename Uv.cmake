@@ -82,7 +82,7 @@ function(uv_initialize)
     file(REAL_PATH ${UV_PYPROJECT_FILE} UV_PYPROJECT_FILE BASE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 
     if(NOT DEFINED UV_WORKSPACE_VENV)
-        set(UV_WORKSPACE_VENV ./.venv)
+        set(UV_WORKSPACE_VENV .venv)
     endif()
 
     # Ensure we always ignore whatever the shell's virtual env is and use the env defined in cmake
