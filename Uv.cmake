@@ -177,9 +177,23 @@ function(_uv_internal_finish
             UV_PROJECT_VERSION
             UV_PYPROJECT_FILE
             UV_USING_MANAGED_PYPROJECT)
+
+    set(REGENERATE_PYPROJECT 0)
+    get_property(UV_DEV_DEPENDENCIES GLOBAL PROPERTY UV_DEV_DEPENDENCIES)
+    if(NOT DEFINED UV_DEV_DEPENDENCIES_CACHED OR NOT "${UV_DEV_DEPENDENCIES_CACHED}" STREQUAL "${UV_DEV_DEPENDENCIES}")
+        set(UV_DEV_DEPENDENCIES_CACHED "${UV_DEV_DEPENDENCIES}" CACHE INTERNAL "UV dependencies cached from the previous configure" FORCE)
+        set(REGENERATE_PYPROJECT 1)
+    endif()
+
+    get_property(UV_PYTHON_TOMLS GLOBAL PROPERTY UV_PYTHON_TOMLS)
+
+    if(NOT DEFINED UV_PYTHON_TOMLS_CACHED OR NOT "${UV_PYTHON_TOMLS_CACHED}" STREQUAL "${UV_PYTHON_TOMLS}")
+        set(UV_PYTHON_TOMLS_CACHED "${UV_PYTHON_TOMLS}" CACHE INTERNAL "UV Python TOMLS cached from the previous configure" FORCE)
+        set(REGENERATE_PYPROJECT 1)
+    endif()
+
     # If we're unmanaged, don't stomp all over the user's work
-    if(UV_USING_MANAGED_PYPROJECT)
-        get_property(UV_PYTHON_TOMLS GLOBAL PROPERTY UV_PYTHON_TOMLS)
+    if(UV_USING_MANAGED_PYPROJECT AND REGENERATE_PYPROJECT)
 
         # Extract package names from pyproject.tomls
         set(UV_WORKSPACE_PACKAGE_NAMES "")
@@ -259,11 +273,12 @@ function(_uv_internal_finish
     # This step is non-destructive so it gets to happen to all projects
     # TODO: we might want a way of turning it off, if including some library that adds
     # unwanted dev deps
-    get_property(UV_DEV_DEPENDENCIES GLOBAL PROPERTY UV_DEV_DEPENDENCIES)
-    foreach(DEP IN LISTS UV_DEV_DEPENDENCIES)
-        message("Adding python dependency ${DEP} ${UV_PYPROJECT_FILE}")
-        execute_process(COMMAND ${UV} add --project ${UV_PYPROJECT_FILE} --dev ${DEP} COMMAND_ERROR_IS_FATAL ANY)
-    endforeach()
+    if(REGENERATE_PYPROJECT)
+        foreach(DEP IN LISTS UV_DEV_DEPENDENCIES)
+            message("Adding python dependency ${DEP} ${UV_PYPROJECT_FILE}")
+            execute_process(COMMAND ${UV} add --project ${UV_PYPROJECT_FILE} --dev ${DEP} -q COMMAND_ERROR_IS_FATAL ANY)
+        endforeach()
+    endif()
 
     # We could depend on all pyproject tomls this way, but it wouldn't catch
     # references of references. Instead, just invoke uv every time
