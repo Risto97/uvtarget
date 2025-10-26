@@ -92,9 +92,15 @@ function(uv_initialize)
     set(ENV{VIRTUAL_ENV} ${UV_WORKSPACE_VENV})
     set(ENV{UV_PROJECT_ENVIRONMENT} ${UV_WORKSPACE_VENV})
 
+    set(RECREATE_VENV 0)
+    if(NOT DEFINED UV_PYTHON_VERSION_CACHED OR NOT "${UV_PYTHON_VERSION_CACHED}" STREQUAL "${UV_PYTHON_VERSION}")
+        set(UV_PYTHON_VERSION_CACHED "${UV_PYTHON_VERSION}" CACHE INTERNAL "UV Python version from the previous configure" FORCE)
+        set(RECREATE_VENV 1)
+    endif()
+
     # create the venv - would normally be done by uv sync but
     # we want to pin the python version ahead of time
-    if(NOT EXISTS ${UV_WORKSPACE_VENV})
+    if(NOT EXISTS ${UV_WORKSPACE_VENV} OR RECREATE_VENV)
         execute_process(
             COMMAND
                 ${UV} venv --python ${UV_PYTHON_VERSION} --allow-existing
