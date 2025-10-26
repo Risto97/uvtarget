@@ -109,6 +109,8 @@ function(uv_initialize)
             COMMAND_ERROR_IS_FATAL ANY)
     endif()
 
+    set(Python3_EXECUTABLE "${CMAKE_BINARY_DIR}/.venv/bin/python3" CACHE INTERNAL "Python3 VENV executable" FORCE)
+
     # Add target to sync all pyproject depends to our dev venv
     add_custom_target(uv_sync ALL COMMAND
         ${CMAKE_COMMAND} -E env
