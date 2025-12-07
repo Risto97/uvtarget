@@ -6,6 +6,16 @@
 
 # Uv.cmake - main file to include, adds several helpers for managing python
 
+# Modified by Risto Pejasinovic under MIT license
+# Modifications:
+# - Performance improvement by caching variables
+# - Create venv only if it doesnt exist
+# - Fix bugs with typos in CMake variables
+# - Rename from uv_initialize to uv_configure
+# - Don't use deferred function calls, rather call uv_initialize manually
+# - Allow to not specify Python version
+
+
 include_guard(GLOBAL)
 
 # Obviously we can't use this if we don't have uv installed
@@ -16,16 +26,16 @@ find_program(UV uv REQUIRED)
 # If called multiple times, the first call "wins" - so take care if you're including
 # something else that might also use uvtarget. Generally, you can only have one
 # venv/python version/workspace, and the implementation reflects that.
-function(uv_initialize)
-    get_property(UVTARGET_INITIALIZED
-             GLOBAL PROPERTY UVTARGET_INITIALIZED
+function(uv_configure)
+    get_property(UVTARGET_CONFIGURED
+             GLOBAL PROPERTY UVTARGET_CONFIGURED
              DEFINED)
-    if(UVTARGET_INITIALIZED)
+    if(UVTARGET_CONFIGURED)
         # Ignore multiple calls to uv_initialize
         return()
     endif()
 
-    define_property(GLOBAL PROPERTY UVTARGET_INITIALIZED)
+    define_property(GLOBAL PROPERTY UVTARGET_CONFIGURED)
 
     set(POSSIBLE_SINGLE_ARGS
         # Python version to use for the environment
@@ -67,14 +77,14 @@ function(uv_initialize)
             message(FATAL_ERROR "Only one of MANAGED_PYPROJECT_FILE and UV_UNMANAGED_PYPROJECT_FILE must be set")
         endif()
         set(UV_PYPROJECT_FILE ${UV_UNMANAGED_PYPROJECT_FILE})
-        message("Using unmanaged pyproject at ${UV_PYPROJECT_FILE}")
+        message(STATUS "Using unmanaged pyproject at ${UV_PYPROJECT_FILE}")
         set(UV_USING_MANAGED_PYPROJECT OFF)
     else()
         if(NOT DEFINED UV_MANAGED_PYPROJECT_FILE)
             set(UV_MANAGED_PYPROJECT_FILE "${CMAKE_CURRENT_SOURCE_DIR}/pyproject.toml")
         endif()
         set(UV_PYPROJECT_FILE ${UV_MANAGED_PYPROJECT_FILE})
-        message("Using managed pyproject at ${UV_PYPROJECT_FILE}")
+        message(STATUS "Using managed pyproject at ${UV_PYPROJECT_FILE}")
         set(UV_USING_MANAGED_PYPROJECT ON)
     endif()
 
@@ -101,9 +111,13 @@ function(uv_initialize)
     # create the venv - would normally be done by uv sync but
     # we want to pin the python version ahead of time
     if(NOT EXISTS ${UV_WORKSPACE_VENV} OR RECREATE_VENV)
+        unset(UV_PYTHON_VERSION_ARG)
+        if(DEFINED UV_PYTHON_VERSION)
+            set(UV_PYTHON_VERSION_ARG --python ${UV_PYTHON_VERSION})
+        endif()
         execute_process(
             COMMAND
-                ${UV} venv --python ${UV_PYTHON_VERSION} --allow-existing
+            ${UV} venv ${UV_PYTHON_VERSION_ARG} --allow-existing
             WORKING_DIRECTORY
                 ${CMAKE_BINARY_DIR}
             COMMAND_ERROR_IS_FATAL ANY)
@@ -136,20 +150,11 @@ function(uv_initialize)
     # but for now there's no way to do so for workspace members
     # see https://github.com/astral-sh/uv/issues/14464
 
-    # This is the "official" way to pass variables to a DEFER call
-    # Variables appear to be evaluated when the function is called
-    # rather than when the function is scheduled - so we have to bundle the whole
-    # thing up as a big string.
-    # https://cmake.org/cmake/help/latest/command/cmake_language.html#deferred-call-examples
-    cmake_language(EVAL CODE "
-    cmake_language(DEFER DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        CALL _uv_internal_finish
-            ${UV_PYTHON_VERSION}
-            ${UV_WORKSPACE_PACKAGE_NAME}
-            ${UV_PROJECT_VERSION}
-            ${UV_PYPROJECT_FILE}
-            ${UV_USING_MANAGED_PYPROJECT})
-    ")
+    set_property(GLOBAL PROPERTY UV_PYTHON_VERSION ${UV_PYTHON_VERSION})
+    set_property(GLOBAL PROPERTY UV_WORKSPACE_PACKAGE_NAME ${UV_WORKSPACE_PACKAGE_NAME})
+    set_property(GLOBAL PROPERTY UV_PROJECT_VERSION ${UV_PROJECT_VERSION})
+    set_property(GLOBAL PROPERTY UV_PYPROJECT_FILE ${UV_PYPROJECT_FILE})
+    set_property(GLOBAL PROPERTY UV_USING_MANAGED_PYPROJECT ${UV_USING_MANAGED_PYPROJECT})
 
     # Add the install step, if we specified an install location for the venv
     # Another bit of CMake oddness - there's once again no great way to pass arguments into
@@ -180,13 +185,13 @@ function(uv_add_dev_dependency DEP)
     set_property(GLOBAL APPEND PROPERTY UV_DEV_DEPENDENCIES ${DEP})
 endfunction()
 
-# Deferred function to write to pyproject.toml
-function(_uv_internal_finish
-            UV_PYTHON_VERSION
-            UV_WORKSPACE_PACKAGE_NAME
-            UV_PROJECT_VERSION
-            UV_PYPROJECT_FILE
-            UV_USING_MANAGED_PYPROJECT)
+function(uv_initialize)
+
+    get_property(UV_PYTHON_VERSION GLOBAL PROPERTY UV_PYTHON_VERSION)
+    get_property(UV_WORKSPACE_PACKAGE_NAME GLOBAL PROPERTY UV_WORKSPACE_PACKAGE_NAME)
+    get_property(UV_PROJECT_VERSION GLOBAL PROPERTY UV_PROJECT_VERSION)
+    get_property(UV_PYPROJECT_FILE GLOBAL PROPERTY UV_PYPROJECT_FILE)
+    get_property(UV_USING_MANAGED_PYPROJECT GLOBAL PROPERTY UV_USING_MANAGED_PYPROJECT)
 
     set(REGENERATE_PYPROJECT 0)
     get_property(UV_DEV_DEPENDENCIES GLOBAL PROPERTY UV_DEV_DEPENDENCIES)
@@ -243,7 +248,9 @@ function(_uv_internal_finish
         # Basic project info
         file(APPEND ${UV_PYPROJECT_FILE} "[project]\n")
         file(APPEND ${UV_PYPROJECT_FILE} "name = \"${UV_WORKSPACE_PACKAGE_NAME}\"\n")
-        file(APPEND ${UV_PYPROJECT_FILE} "requires-python = \">=${UV_PYTHON_VERSION}\"\n")
+        if(DEFINED UV_PYTHON_VERSION)
+            file(APPEND ${UV_PYPROJECT_FILE} "requires-python = \">=${UV_PYTHON_VERSION}\"\n")
+        endif()
         file(APPEND ${UV_PYPROJECT_FILE} "version = \"${UV_PROJECT_VERSION}\"\n")
         file(APPEND ${UV_PYPROJECT_FILE} "dependencies = [\n")
         foreach(NAME IN LISTS UV_WORKSPACE_PACKAGE_NAMES)
@@ -285,7 +292,7 @@ function(_uv_internal_finish
     # unwanted dev deps
     if(REGENERATE_PYPROJECT)
         foreach(DEP IN LISTS UV_DEV_DEPENDENCIES)
-            message("Adding python dependency ${DEP} ${UV_PYPROJECT_FILE}")
+            message(STATUS "Adding python dependency ${DEP} ${UV_PYPROJECT_FILE}")
             execute_process(COMMAND ${UV} add --project ${UV_PYPROJECT_FILE} --dev ${DEP} -q COMMAND_ERROR_IS_FATAL ANY)
         endforeach()
     endif()
