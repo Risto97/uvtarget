@@ -292,8 +292,9 @@ function(uv_initialize)
     # unwanted dev deps
     if(REGENERATE_PYPROJECT)
         foreach(DEP IN LISTS UV_DEV_DEPENDENCIES)
+            string(REPLACE " " ";" DEP_ARGS "${DEP}")
             message(STATUS "Adding python dependency ${DEP} ${UV_PYPROJECT_FILE}")
-            execute_process(COMMAND ${UV} add --project ${UV_PYPROJECT_FILE} --dev ${DEP} -q COMMAND_ERROR_IS_FATAL ANY)
+            execute_process(COMMAND ${UV} add --project ${UV_PYPROJECT_FILE} --dev ${DEP_ARGS} -q COMMAND_ERROR_IS_FATAL ANY)
         endforeach()
     endif()
 
